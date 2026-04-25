@@ -1,0 +1,13 @@
+{
+  "best_score": 0.3455286815127667,
+  "best_params": {
+    "feature_selection": false,
+    "learning_rate": 0.15568653516107106,
+    "max_depth": 7,
+    "n_estimators": 177,
+    "threshold_buy": 0.3704270897954325,
+    "threshold_sell": 0.600029944647675,
+    "hold_zone": 0.21151677743433517,
+    "confidence_filter": 0.3902296457849091
+  }
+}
