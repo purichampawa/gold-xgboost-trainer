@@ -11,9 +11,9 @@ import joblib
 import pandas as pd
 
 from old_patch2.config import CONFIG
-from old_patch2.metrics import compute_metrics
-from old_patch2.reporting import print_console_summary, save_backtest_run
-from old_patch2.risk import RiskController, apply_slippage, apply_spread, calc_position_size
+from patch3.metrics import compute_metrics
+from patch3.reporting import print_console_summary, save_backtest_run
+from patch3.risk import RiskController, apply_slippage, apply_spread, calc_position_size
 from old_patch2.session_gate import SessionGate
 from old_patch2.signals import SignalEngine
 from old_patch2.train import detect_feature_columns, load_dataset, time_series_split

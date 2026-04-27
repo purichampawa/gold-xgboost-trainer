@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date
-
-from old_patch2.config import CONFIG, BrokerConfig, RiskConfig
+from typing import Any
 
 
 def can_open_trade(cash: float, min_order: float) -> bool:
@@ -51,12 +50,20 @@ def stop_if_blowup(
 
 @dataclass(slots=True)
 class RiskController:
-    broker: BrokerConfig = field(default_factory=BrokerConfig)
-    risk: RiskConfig = field(default_factory=RiskConfig)
-    starting_capital: float = CONFIG.broker.starting_capital_thb
+    broker: Any = None
+    risk: Any = None
+    starting_capital: float = 0.0
     daily_loss_realized: float = 0.0
     current_day: date | None = None
     consecutive_losses: int = 0
+
+    @classmethod
+    def from_config(cls, config: Any) -> "RiskController":
+        return cls(
+            broker=config.broker,
+            risk=config.risk,
+            starting_capital=float(config.broker.starting_capital_thb),
+        )
 
     def reset_day_if_needed(self, day: date) -> None:
         if self.current_day != day:

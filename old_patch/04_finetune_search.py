@@ -1,7 +1,7 @@
 import pandas as pd
 import joblib
 from old_patch2.session_gate import SessionGate
-from old_patch2.risk import RiskManager
+from patch3.risk import RiskManager
 
 # โหลดข้อมูลรอไว้เลย (ลดเวลาโหลดใน Loop)
 df = pd.read_csv('gold_features_cleaned.csv')
