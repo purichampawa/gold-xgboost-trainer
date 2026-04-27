@@ -1,0 +1,25 @@
+{
+    "buy_model": {
+        "best_score": 0.5421618793759063,
+        "best_params": {
+            "n_estimators": 562,
+            "learning_rate": 0.010144934918174957,
+            "max_depth": 6,
+            "subsample": 0.6456432398196849,
+            "colsample_bytree": 0.9867439146331299,
+            "scale_pos_weight": 1.02243787861003
+        }
+    },
+    "sell_model": {
+        "best_score": 0.5198962860882715,
+        "best_params": {
+            "n_estimators": 523,
+            "learning_rate": 0.013047763257435029,
+            "max_depth": 5,
+            "subsample": 0.699349695085579,
+            "colsample_bytree": 0.9628374961435331,
+            "scale_pos_weight": 1.9500026724988082
+        }
+    },
+    "model_type": "xgboost"
+}

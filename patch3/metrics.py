@@ -155,6 +155,7 @@ class BacktestMetrics:
     starting_capital: float
     ending_equity: float
     total_return_pct: float
+    xirr_pct: float
 
     max_drawdown_pct: float
     max_drawdown_value: float
@@ -307,6 +308,16 @@ def compute_metrics(
         total_closed,
         backtest_days
     )
+
+    # ------------------------------------------------------
+    # XIRR / CAGR
+    # ------------------------------------------------------
+    xirr_pct = 0.0
+    if starting_capital > 0 and backtest_days > 0:
+        years = backtest_days / 365.0
+        # ใช้สูตร CAGR แทนได้เลยเนื่องจากไม่มีกระแสเงินสดระหว่างทาง
+        xirr_raw = (ending_equity / starting_capital) ** (1 / years) - 1
+        xirr_pct = xirr_raw * 100.0
 
     # ------------------------------------------------------
     # Exposure
@@ -517,6 +528,7 @@ def compute_metrics(
         starting_capital=starting_capital,
         ending_equity=ending_equity,
         total_return_pct=total_return_pct,
+        xirr_pct=xirr_pct,
 
         max_drawdown_pct=max_dd_pct,
         max_drawdown_value=max_dd_val,

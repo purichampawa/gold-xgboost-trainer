@@ -136,7 +136,7 @@ def main(csv_path: str, model_type: str, n_trials: int, output_dir: str):
         "model_type": model_type
     }
     
-    result_file = out_path / "finetune_dual_results.json"
+    result_file = out_path / "finetune_dual_results_latest_model.json"
     with result_file.open("w", encoding="utf-8") as f:
         json.dump(payload, f, indent=4)
 
@@ -147,7 +147,7 @@ def main(csv_path: str, model_type: str, n_trials: int, output_dir: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--csv", type=str, default="data/label/gold_train_2025.csv", help="ไฟล์ Label ฉบับใหม่")
+    parser.add_argument("--csv", type=str, default="data/label/gold_data_labeled_v6.csv", help="ไฟล์ Label ฉบับใหม่")
     parser.add_argument("--model", type=str, default="xgboost", choices=["xgboost", "lightgbm"])
     parser.add_argument("--trials", type=int, default=50, help="จำนวนรอบที่ให้ Optuna จูนต่อ 1 หน้าเทรด")
     parser.add_argument("--out", type=str, default="artifacts")

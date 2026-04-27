@@ -48,7 +48,7 @@ class SignalEngine:
             # --- เริ่มส่วนที่แก้ไขสำหรับ Min Threshold ท้ายรอบ ---
             if session_progress > 0.9:
                 # 5-10 นาทีสุดท้ายของรอบ ถ้ายังไม่ได้เทรด ยอมรับเกณฑ์ที่ 0.50 เพื่อรักษาโควต้า
-                current_threshold = 0.55 
+                current_threshold = 0.55
             elif session_progress < 0.5:
                 current_threshold = self.calib_config.base_threshold + 0.10 
             else:

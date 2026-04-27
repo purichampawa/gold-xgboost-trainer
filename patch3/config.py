@@ -10,8 +10,8 @@ def _versioned_path(version: str, *parts: str) -> Path:
 
 @dataclass(slots=True)
 class DataConfig:
-    csv_path: Path = Path("data/label/gold_train_2025.csv") 
-    backtest_path: Path = Path("data/label/gold_backtest_2026.csv")
+    csv_path: Path = Path("data/label/gold_data_labeled_v6.csv") 
+    backtest_path: Path = Path("data/label/set2_apr_backtest.csv")
     timestamp_col: str = "timestamp"
     price_col: str = "xauusd_close"
     target_buy_col: str = "target_buy"
@@ -40,28 +40,28 @@ class SplitConfig:
 class ModelConfig:
     model_type: str = "xgboost"
 
-    buy_model_path: Path = _versioned_path("v4", "models", "model_buy.pkl")
-    sell_model_path: Path = _versioned_path("v4", "models", "model_sell.pkl")
-    feature_columns_path: Path = _versioned_path("v4", "models", "feature_columns.json")
+    buy_model_path: Path = _versioned_path("latest_model", "models", "model_buy.pkl")
+    sell_model_path: Path = _versioned_path("latest_model", "models", "model_sell.pkl")
+    feature_columns_path: Path = _versioned_path("latest_model", "models", "feature_columns.json")
 
     random_state: int = 42
     n_jobs: int = -1
 
     # 🟢 BUY MODEL BEST PARAMS (จาก Optuna)
-    buy_n_estimators: int = 547
-    buy_learning_rate: float = 0.011440877817656781
-    buy_max_depth: int = 6
-    buy_subsample: float = 0.9326805132067173
-    buy_colsample_bytree: float = 0.7469364373081855
-    buy_scale_pos_weight: float = 1.2    # ลดจาก 1.42
+    buy_n_estimators: int = 270
+    buy_learning_rate: float = 0.02568177356257289
+    buy_max_depth: int = 7
+    buy_subsample: float = 0.8469126011150903
+    buy_colsample_bytree: float = 0.9962714834928094
+    buy_scale_pos_weight: float = 1.3777090544750767  # ลดจาก 1.42
 
     # 🔴 SELL MODEL BEST PARAMS (จาก Optuna)
-    sell_n_estimators: int = 388
-    sell_learning_rate: float = 0.012141731939264551
-    sell_max_depth: int = 6
-    sell_subsample: float = 0.8066492723913712
-    sell_colsample_bytree: float = 0.6942104037677562
-    sell_scale_pos_weight: float = 1.5   # ลดจาก 2.66
+    sell_n_estimators: int = 579
+    sell_learning_rate: float = 0.01012015792641747
+    sell_max_depth: int = 7
+    sell_subsample: float = 0.8973233413246483
+    sell_colsample_bytree: float = 0.96746657749076
+    sell_scale_pos_weight: float = 1.0836476460180258
 
     # buy_n_estimators: int = 100
     # buy_learning_rate: float = 0.1
@@ -112,10 +112,10 @@ class RiskConfig:
     max_consecutive_losses: int = 1000
     
     # 🟢 ปรับให้ตรงกับ MAX_RISK_PCT ในไฟล์ Label
-    stop_loss_pct: float = 0.0043     # 0.43% (ให้ระยะหายใจบอทเท่ากับตอนที่สอน)
+    stop_loss_pct: float = 0.0032     # 0.43% (ให้ระยะหายใจบอทเท่ากับตอนที่สอน)
     
     # 🟢 ปรับให้ตรงกับ TARGET_MOVE_PCT ในไฟล์ Label
-    take_profit_pct: float = 0.0018
+    take_profit_pct: float = 0.0020
     
     blowup_equity_thb: float = 500.0  
     blowup_loss_thb: float = 1000.0
@@ -139,23 +139,23 @@ class MetricsConfig:
 
 @dataclass(slots=True)
 class TrainOutputConfig:
-    base_dir: Path = _versioned_path("v4", "train")
-    model_path: Path = _versioned_path("v4", "models", "model_buy.pkl")
-    metrics_path: Path = _versioned_path("v4", "train", "metrics.json")
-    feature_columns_path: Path = _versioned_path("v4", "models", "feature_columns.json")
+    base_dir: Path = _versioned_path("latest_model", "train")
+    model_path: Path = _versioned_path("latest_model", "models", "model_buy.pkl")
+    metrics_path: Path = _versioned_path("latest_model", "train", "metrics.json")
+    feature_columns_path: Path = _versioned_path("latest_model", "models", "feature_columns.json")
 
 @dataclass(slots=True)
 class BacktestOutputConfig:
-    base_dir: Path = _versioned_path("v4", "backtests")
-    history_path: Path = _versioned_path("v4", "backtests", "history.csv")
+    base_dir: Path = _versioned_path("latest_model", "backtests")
+    history_path: Path = _versioned_path("latest_model", "backtests", "history.csv")
 
 @dataclass(slots=True)
 class LoggingConfig:
-    base_dir: Path = _versioned_path("v4", "logs")
+    base_dir: Path = _versioned_path("latest_model", "logs")
 
 @dataclass(slots=True)
 class ProjectConfig:
-    version: str = "v4"
+    version: str = "latest_model"
     data: DataConfig = field(default_factory=DataConfig)
     labels: LabelConfig = field(default_factory=LabelConfig)
     split: SplitConfig = field(default_factory=SplitConfig)

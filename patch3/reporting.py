@@ -373,6 +373,10 @@ def print_console_summary(
         f"Total Return       : "
         f"{metrics.total_return_pct:.2f}%"
     )
+    print(
+        f"XIRR (Annualized)  : "
+        f"{metrics.xirr_pct:.2f}%"
+    )
 
     print("--------------------------------------------")
 
