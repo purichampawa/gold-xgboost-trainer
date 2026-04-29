@@ -52,8 +52,6 @@ config.local.json
 # =====================================
 data/raw/
 data/processed/
-data/label/
-*.csv
 *.parquet
 *.feather
 *.pkl

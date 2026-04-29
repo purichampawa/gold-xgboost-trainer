@@ -209,8 +209,12 @@ def compute_set_metrics(data: dict) -> dict:
 
     # Annualized trade stats
     best_at = worst_at = median_at = top10_at = bot10_at = 0.0
-    if len(closed) > 0 and "days_held" in closed.columns:
+    if len(closed) > 0 and "days_held" in closed.columns and "pnl_pct" in closed.columns:
         hold = closed["days_held"].astype(float).clip(lower=1/48).values
+        # NOTE: Compound (1+r)^(365/d)-1 explodes for intraday trades (hold<1day).
+        # Use original metrics.py formula: (pnl_pct / days_held) * 100
+        # = daily efficiency score (% return per day, scaled x100).
+        # NOT an annualized return — label clearly in output.
         score = np.clip((trade_ret_arr / hold) * 100.0, -300, 300)
         best_at   = float(score.max())
         worst_at  = float(score.min())
@@ -329,6 +333,24 @@ def compute_combined(all_metrics: list[dict]) -> dict:
     t_ann = _annualized_sharpe(all_trade_ret, tpd_avg * 252)
     t_def = _deflated_sharpe(t_ann, len(all_trade_ret))
 
+    # Pooled annualized trade stats (compound method)
+    all_hold = np.concatenate([
+        m["trades_df"]["days_held"].astype(float).clip(lower=1/48).values
+        for m in all_metrics if "days_held" in m["trades_df"].columns
+    ])
+    all_ann_ret = np.clip((all_trade_ret / all_hold) * 100.0, -300, 300)
+    pooled_best_at   = float(all_ann_ret.max()) if len(all_ann_ret) else 0.0
+    pooled_worst_at  = float(all_ann_ret.min()) if len(all_ann_ret) else 0.0
+    pooled_median_at = float(np.median(all_ann_ret)) if len(all_ann_ret) else 0.0
+    pooled_top10_at  = float(np.percentile(all_ann_ret, 90)) if len(all_ann_ret) else 0.0
+    pooled_bot10_at  = float(np.percentile(all_ann_ret, 10)) if len(all_ann_ret) else 0.0
+
+    # Aggregated fields for empty combined cells
+    avg_payoff   = np.mean([m["payoff_ratio"] for m in all_metrics])
+    avg_ending   = np.mean([m["ending_equity"] for m in all_metrics])
+    avg_dd_val   = np.mean([m["max_drawdown_value"] for m in all_metrics])
+    avg_sh_hc    = np.mean([m["sharpe_haircut"] for m in all_metrics])
+
     return {
         "total_closed_trades": total_trades,
         "total_wins": total_wins,
@@ -356,6 +378,15 @@ def compute_combined(all_metrics: list[dict]) -> dict:
         "trade_sharpe_deflated_pooled": t_def,
         "n_months": len(all_metrics),
         "profitable_months": sum(1 for m in all_metrics if m["net_profit"] > 0),
+        "avg_payoff_ratio": avg_payoff,
+        "avg_ending_equity": avg_ending,
+        "avg_max_dd_value": avg_dd_val,
+        "avg_sharpe_haircut": avg_sh_hc,
+        "pooled_best_annualized_trade": pooled_best_at,
+        "pooled_worst_annualized_trade": pooled_worst_at,
+        "pooled_median_annualized_trade": pooled_median_at,
+        "pooled_top10_annualized_trade": pooled_top10_at,
+        "pooled_bot10_annualized_trade": pooled_bot10_at,
     }
 
 
@@ -482,12 +513,12 @@ def build_cover(wb, all_metrics, combined):
     add_row(r, "Avg Win (THB)",          lambda m: m["avg_win"],             "#,##0.00", combined["avg_win"]); r += 1
     add_row(r, "Avg Loss (THB)",         lambda m: m["avg_loss"],            "#,##0.00", combined["avg_loss"]); r += 1
     add_row(r, "Profit Factor",          lambda m: m["profit_factor"],       "0.000",   combined["profit_factor"]); r += 1
-    add_row(r, "Payoff Ratio",           lambda m: m["payoff_ratio"],        "0.000"); r += 1
+    add_row(r, "Payoff Ratio",           lambda m: m["payoff_ratio"],        "0.000", combined["avg_payoff_ratio"]); r += 1
     add_row(r, "Expectancy / Trade (THB)", lambda m: m["expectancy_per_trade"], "#,##0.00", combined["expectancy_per_trade"]); r += 1
 
     add_section_header(r, "RETURN METRICS (per independent backtest)"); r += 1
     add_row(r, "Starting Capital (THB)", lambda m: m["starting_capital"],       "#,##0.00", "1,500.00 × 4 sets", "General"); r += 1
-    add_row(r, "Ending Equity (THB)",    lambda m: m["ending_equity"],          "#,##0.00"); r += 1
+    add_row(r, "Ending Equity (THB)",    lambda m: m["ending_equity"],          "#,##0.00", combined["avg_ending_equity"], "#,##0.00 avg"); r += 1
     add_row(r, "Total Return % (monthly)", lambda m: m["total_return_pct"]/100, "0.00%",  combined["avg_monthly_return_pct"]/100, "0.00% avg"); r += 1
     add_row(r, "XIRR (annualized, per backtest)", lambda m: m["xirr_pct"]/100,  "0.00%",  "N/A — independent ports", "General"); r += 1
     add_row(r, "Best Monthly Return",    lambda m: "",                           "General", combined["best_monthly_return_pct"]/100, "0.00%"); r += 1
@@ -495,23 +526,26 @@ def build_cover(wb, all_metrics, combined):
 
     add_section_header(r, "RISK"); r += 1
     add_row(r, "Max Drawdown %",           lambda m: m["max_drawdown_pct"]/100,  "0.00%", combined["worst_drawdown_pct"]/100, "0.00% (worst)"); r += 1
-    add_row(r, "Max Drawdown Value (THB)", lambda m: m["max_drawdown_value"],     "#,##0.00"); r += 1
+    add_row(r, "Max Drawdown Value (THB)", lambda m: m["max_drawdown_value"],     "#,##0.00", combined["avg_max_dd_value"], "#,##0.00 avg"); r += 1
     add_row(r, "Exposure Time %",          lambda m: m["exposure_pct"]/100,      "0.00%", combined["avg_exposure_pct"]/100, "0.00% avg"); r += 1
 
     add_section_header(r, "SHARPE FRAMEWORK"); r += 1
     add_row(r, "Sharpe Raw (daily)",     lambda m: m["sharpe_raw"],          "0.000", combined["sharpe_raw_pooled"]); r += 1
     add_row(r, "Sharpe Annualized",      lambda m: m["sharpe_annualized"],   "0.000", combined["sharpe_annualized_pooled"]); r += 1
     add_row(r, "Sharpe Deflated",        lambda m: m["sharpe_deflated"],     "0.000", combined["sharpe_deflated_pooled"]); r += 1
-    add_row(r, "Sharpe Haircut",         lambda m: m["sharpe_haircut"],      "0.000"); r += 1
+    add_row(r, "Sharpe Haircut",         lambda m: m["sharpe_haircut"],      "0.000", combined["avg_sharpe_haircut"]); r += 1
     add_row(r, "Sharpe Deployable",      lambda m: m["sharpe_deployable"],   "0.000", combined["sharpe_deployable_pooled"]); r += 1
     add_row(r, "Trade Sharpe (deflated)", lambda m: m["trade_sharpe_deflated"], "0.000", combined["trade_sharpe_deflated_pooled"]); r += 1
 
-    add_section_header(r, "ANNUALIZED TRADE EFFICIENCY"); r += 1
-    add_row(r, "Best Annualized Trade %",     lambda m: m["best_annualized_trade"]/100,    "0.00%"); r += 1
-    add_row(r, "Worst Annualized Trade %",    lambda m: m["worst_annualized_trade"]/100,   "0.00%"); r += 1
-    add_row(r, "Median Annualized Trade %",   lambda m: m["median_annualized_trade"]/100,  "0.00%"); r += 1
-    add_row(r, "Top 10% Annualized Trade",    lambda m: m["top10_annualized_trade"]/100,   "0.00%"); r += 1
-    add_row(r, "Bottom 10% Annualized Trade", lambda m: m["bottom10_annualized_trade"]/100,"0.00%"); r += 1
+    add_section_header(r, "TRADE EFFICIENCY SCORE (pnl_pct / days_held × 100)  ⚠ Not annual % — intraday scale"); r += 1
+    # score = pnl_pct / days_held * 100 (original metrics.py formula)
+    # Compound annualization is invalid for <1 day holds (explodes to trillions%)
+    # Values are stored as score (e.g. 10.56) → divide by 100 for 0.00% cell format
+    add_row(r, "Best Trade Efficiency Score",     lambda m: m["best_annualized_trade"],    "0.00", combined["pooled_best_annualized_trade"],   "0.00"); r += 1
+    add_row(r, "Worst Trade Efficiency Score",    lambda m: m["worst_annualized_trade"],   "0.00", combined["pooled_worst_annualized_trade"],  "0.00"); r += 1
+    add_row(r, "Median Trade Efficiency Score",   lambda m: m["median_annualized_trade"],  "0.00", combined["pooled_median_annualized_trade"], "0.00"); r += 1
+    add_row(r, "Top 10% Efficiency Score",        lambda m: m["top10_annualized_trade"],   "0.00", combined["pooled_top10_annualized_trade"],  "0.00"); r += 1
+    add_row(r, "Bottom 10% Efficiency Score",     lambda m: m["bottom10_annualized_trade"],"0.00", combined["pooled_bot10_annualized_trade"],  "0.00"); r += 1
 
     add_section_header(r, "MODEL & OVERFIT"); r += 1
     add_row(r, "Run Score",             lambda m: m["score"],               "0.00"); r += 1
